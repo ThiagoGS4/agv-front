@@ -14,10 +14,11 @@ export const useAgvStore = defineStore('agv', () => {
   const currentRoomId = ref<string | null>(null);
   const lastDirectionSent = ref<AgvDirectionEnum>(AgvDirectionEnum.AGV_FORWARD);
   const maps = ref<HospitalMap>()
-  const quareCounter = ref<number>()
+  const squareCounter = ref<number>()
   const colorR = ref<number>()
   const colorG = ref<number>()
   const colorB = ref<number>()
+  const goingBack = ref<boolean>(false)
   
   async function getMaps() {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/api/maps`, {
@@ -33,6 +34,12 @@ export const useAgvStore = defineStore('agv', () => {
     targetSquareIndex: number,
     mapSide: MapSide
   ): AgvCommandPayload {
+
+    console.log('targetSquareIndex -> ', targetSquareIndex);
+    console.log('mapSide -> ', mapSide);
+    console.log('currentSquareIndex.value -> ', currentSquareIndex.value);
+    
+
     const delta = targetSquareIndex - currentSquareIndex.value;
 
     if (delta === 0) {
@@ -56,10 +63,13 @@ export const useAgvStore = defineStore('agv', () => {
     };
   }
 
-  // Chame esta função no listener do WebSocket quando o ESP32 publicar que passou por um quadrado azul
   function onBlueSquarePassed(): void {
     if (lastDirectionSent.value === AgvDirectionEnum.AGV_FORWARD) {
-      currentSquareIndex.value++;
+      if(goingBack.value){
+        currentSquareIndex.value--;
+      } else{
+        currentSquareIndex.value++;
+      }
     } else if (
       lastDirectionSent.value === AgvDirectionEnum.AGV_BACKWARDS &&
       currentSquareIndex.value > 0
@@ -70,8 +80,21 @@ export const useAgvStore = defineStore('agv', () => {
     
   }
 
+  function resetState(): void {
+    goingBack.value = false;
+    currentSquareIndex.value = 0;
+    currentRoomId.value = null;
+    squareCounter.value = undefined;
+    lastDirectionSent.value = AgvDirectionEnum.AGV_FORWARD;
+  }
+
+  socketIO.on('atBase', resetState);
+  socketIO.on('goingBack', () =>{
+    goingBack.value = true
+  });
+
   socketIO.on('squarePassed', (data) => {  
-    quareCounter.value = data.index
+    squareCounter.value = data.index
     onBlueSquarePassed();
   });
   socketIO.on('R', (data) => {
@@ -92,7 +115,8 @@ export const useAgvStore = defineStore('agv', () => {
     isAtBase,
     calculateCommandToRoom,
     onBlueSquarePassed,
-    quareCounter,
+    resetState,
+    squareCounter,
     colorR,
     colorG,
     colorB

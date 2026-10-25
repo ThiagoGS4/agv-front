@@ -27,7 +27,7 @@
     </div>
 
     <div class="debug">
-      <p>R: {{agvStore.colorR}}</p> <p>Square counter: {{agvStore.quareCounter}}</p>
+      <p>R: {{agvStore.colorR}}</p> <p>Square counter: {{agvStore.squareCounter}}</p>
       <p>G: {{agvStore.colorG}} </p>
       <p>B: {{agvStore.colorB}}</p>
     </div>
